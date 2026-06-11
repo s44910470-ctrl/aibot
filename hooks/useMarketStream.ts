@@ -7,7 +7,6 @@ import { BinanceSocketManager } from '@/lib/market/websocket';
 const socketManager = new BinanceSocketManager();
 
 export function useMarketStream(symbols: string[]) {
-  const setSnapshot = useMarketStore((state) => state.setSnapshot);
   const setLastUpdatedAt = useMarketStore((state) => state.setLastUpdatedAt);
   const setConnectionStatus = useMarketStore((state) => state.setConnectionStatus);
   const setError = useMarketStore((state) => state.setError);
@@ -19,21 +18,23 @@ export function useMarketStream(symbols: string[]) {
     setError(null);
 
     socketManager.connect(symbols, (update) => {
+      const store = useMarketStore.getState();
       setLastUpdatedAt(update.timestamp);
-      setSnapshot((prev) =>
-        prev && prev.symbol === update.symbol
-          ? {
-              ...prev,
-              price: update.price,
-            }
-          : prev,
-      );
-      setConnectionStatus('connected');
+
+      const current = store.snapshot;
+      if (current && current.symbol === update.symbol) {
+        store.setSnapshot({
+          ...current,
+          price: update.price,
+        });
+      }
+
+      store.setConnectionStatus('connected');
     });
 
     return () => {
       socketManager.disconnect();
       setConnectionStatus('disconnected');
     };
-  }, [symbols.join(','), setConnectionStatus, setError, setLastUpdatedAt, setSnapshot]);
+  }, [symbols.join(','), setConnectionStatus, setError, setLastUpdatedAt]);
 }
