@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { SymbolType } from '@/types/market';
-import { getMockMarketSnapshot } from '@/lib/market/mock';
+import { getCandleSeries } from '@/lib/market/service';
 
 function isSymbol(value: string | null): value is SymbolType {
   return value === 'BTCUSDT' || value === 'ETHUSDT';
@@ -18,11 +18,11 @@ export async function GET(request: Request) {
     );
   }
 
-  const snapshot = getMockMarketSnapshot(symbol);
+  const candles = await getCandleSeries(symbol, timeframe);
 
   return NextResponse.json({
     ok: true,
     timeframe,
-    data: snapshot.candles,
+    data: candles,
   });
 }
